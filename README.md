@@ -46,10 +46,22 @@ source venv/bin/activate  # or venv\Scripts\activate on Windows
 # Install dependencies
 pip install -r requirements.txt
 
+
+
+# add backend env file
+cd backend
+HF_API_KEY=your_hugging_face_api_key
+
 # Start backend server
 uvicorn app:app --reload
 
+# add frontend env file
+cd frontend
+API_URL = http://localhost:8000/chat
+
+
 # In another terminal, run frontend
+cd frontend
 streamlit run app.py
 ```
 
@@ -70,8 +82,7 @@ streamlit run app.py
 
 ```json
 {
-  "response": "Top recommendation – Alice Johnson
-Alice has 5 years of experience with React (alongside Python, AWS, and TensorFlow) and has delivered large‑scale projects such as an e‑commerce platform and a healthcare dashboard. Her deep React expertise and proven track record on complex, data‑driven applications make her a strong fit for any front‑end work you need next week, and she’s listed as currently available."
+  "response": "Alice has 5 years of experience with React (alongside Python, AWS, and TensorFlow) and has delivered large‑scale projects such as an e‑commerce platform and a healthcare dashboard. Her deep React expertise and proven track record on complex, data‑driven applications make her a strong fit for any front‑end work you need next week, and she’s listed as currently available."
 }
 ```
 
