@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
-from search import search_employees
 from generator import generate_response
+from rag import search_employees_rag
 from data import employees
 from typing import List, Optional
 
@@ -13,26 +13,35 @@ app = FastAPI()
 
 
 @app.get("/employees/search")
-def search_employees(
+def semantic_search_employees(
     skills: Optional[List[str]] = Query(None),
     experience: Optional[int] = None,
-    availability: Optional[str] = None
+    availability: Optional[str] = None,
 ):
-    result = employees
+    query_parts = []
 
     if skills:
-        result = [e for e in result if any(skill.lower() in [s.lower() for s in e["skills"]] for skill in skills)]
+        query_parts.append(f"skills in {', '.join(skills)}")
     if experience is not None:
-        result = [e for e in result if e["experience_years"] >= experience]
+        query_parts.append(f"{experience}+ years of experience")
     if availability:
-        result = [e for e in result if e["availability"].lower() == availability.lower()]
+        query_parts.append(f"currently {availability}")
 
-    return {"employees": result}
+    query = "Find employees with " + " and ".join(query_parts) if query_parts else "Find all employees"
+
+    matches = search_employees_rag(query)
+
+    return {"employees": matches}
+
 
 @app.post("/chat")
-async def chat(query: ChatQuery):
-    results = search_employees(query.query)
-    response = generate_response(query.query, results)
-    return {"results": results, "response": response}
+async def chat_endpoint(request: ChatQuery):
+    try:
+        response = generate_response(request.query)
+        return {"response": response}
+    except Exception as e:
+        print(f"Error: {e}")
+        return {"error": "Failed to fetch a proper response from the server."}
+
 
 

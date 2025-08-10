@@ -1,6 +1,7 @@
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
+from rag import search_employees_rag
 
 load_dotenv()
 
@@ -9,30 +10,51 @@ client = OpenAI(
     api_key=os.getenv("HF_API_KEY"),
 )
 
-def generate_response(query: str, employees: list):
-    lowered = query.lower().strip()
-    greetings = {"hi", "hello", "hey", "good morning", "good evening", "good afternoon"}
-    if any(word in lowered for word in greetings) or len(lowered) < 10:
-        return (
-            "Hello! I'm your HR assistant. You can ask me things like:\n"
-            "- Who is a good fit for a frontend developer role?\n"
-            "- Recommend someone with Java + Spring experience.\n"
-            "- Who is available for a project starting next week?\n"
-        )
 
-    if not employees:
-        return "No matching employees found."
+def is_search_query(query: str) -> bool:
+    """
+    Returns True if the query looks like a search or employee filter request.
+    """
+    keywords = [
+        "find", "search", "who", "available", "suggest", "looking for",
+        "need", "developer", "engineer", "project", "skills", "experience",
+        "worked on", "recommend"
+    ]
+    return any(keyword in query.lower() for keyword in keywords)
 
-    context = "\n".join([
-        f"{e['name']}, Skills: {', '.join(e['skills'])}, Experience: {e['experience_years']} yrs, Projects: {', '.join(e['projects'])}, Availability: {e['availability']}"
-        for e in employees
-    ])
+def generate_response(query: str) -> str:
+    matches = search_employees_rag(query)
+    
+    if not matches:
+        return "I couldn't find any matching employees for that request."
 
+    if not is_search_query(query):
+        return "Hi there! I'm your HR assistant. Ask me something like:\n- Find Python developers\n- Who is available next week?\n- Recommend someone for a healthcare project."
 
-    messages = [
-        {
-            "role": "system",
-            "content": (
+    # Construct context
+    context_blocks = []
+    for emp, text in matches:
+        context_blocks.append(f"- {text}")
+    
+    context_text = "\n".join(context_blocks)
+    
+    # Final prompt to LLM
+    prompt = f"""You are an intelligent HR assistant helping to find employees for various projects.
+
+User Query: {query}
+If the query is not about hiring or allocation, respond normally without trying to search.
+
+Here are some employee profiles that may match:
+
+{context_text}
+
+Based on the above, recommend suitable candidates and explain why they match."""
+    
+    # Send to OpenAI Chat model
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-120b:cerebras",
+        messages=[
+            {"role": "system", "content":  (
                 "You are an expert HR assistant specializing in candidate recommendations. "
                 "Your responses should be:\n"
                 "- Professional yet conversational\n"
@@ -47,26 +69,12 @@ def generate_response(query: str, employees: list):
                 "4. Keep responses concise (2-3 paragraphs max unless comparison requested)\n\n"
                 
                 "Avoid generic responses. Always reference specific skills, experience, and availability from the data provided."
-            )
-        },
-        {
-            "role": "user",
-            "content": (
-                f"I am looking for someone for this role: {query}.\n"
-                "Here are some employees that might be relevant:\n"
-                f"{context}\n\n"
-                "Which of these candidates would you recommend and why?"
-            ),
-        },
-    ]
-
-    try:
-        response = client.chat.completions.create(
-            model="openai/gpt-oss-120b:cerebras",
-            messages=messages,
-            temperature=0.3,
-            max_tokens=2000,
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        return f"Error: {e}"
+                "If the query is not about hiring or allocation, respond normally without trying to search."
+            )},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.3,
+        max_tokens=2000
+    )
+    
+    return response.choices[0].message.content.strip()

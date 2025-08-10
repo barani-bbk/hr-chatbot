@@ -1,13 +1,17 @@
 import streamlit as st
 import requests
+import os
+from dotenv import load_dotenv
 
-st.set_page_config(page_title="HR Chatbot", page_icon="🤖", layout="centered")
+load_dotenv()
+
+API_URL = os.getenv("API_URL")
+
+st.set_page_config(page_title="HR Chatbot", page_icon=":material/smart_toy:", layout="centered")
 
 # Initialize session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
-API_URL = "http://localhost:8000/chat"
 
 # Display chat history
 st.title("HR Chatbot")

@@ -1,0 +1,21 @@
+# Core backend
+fastapi
+uvicorn
+
+# Data handling and typing
+pydantic
+python-dotenv
+
+# OpenAI LLM API
+openai
+
+# Embedding model
+sentence-transformers
+
+# Vector search
+faiss-cpu
+numpy
+
+# Frontend
+streamlit
+requests
