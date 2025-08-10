@@ -114,5 +114,6 @@ Alice has 5 years of experience with React (alongside Python, AWS, and TensorF
 ## Demo
 
 - **Local Run**: Follow setup instructions above
-- **Screenshots**: [Add screenshots or recording link here]
-- **Live Demo (optional)**: [Your deployed Streamlit URL or NGROK]
+- **Screenshots**: ![Chatbot UI](screenshots/app.png)
+  ![Chatbot Query](screenshots/query.png)
+- **Demo Video**: https://www.loom.com/share/c004c7bbb81548cfbbdb63797d7be66a?sid=7186cf70-4821-4b39-89c0-1c23b57a2efc
